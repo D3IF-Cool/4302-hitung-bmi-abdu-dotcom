@@ -56,7 +56,7 @@ class HitungFragment : Fragment() {
             viewModel.selesaiNavigasi()
         })
 
-       
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
