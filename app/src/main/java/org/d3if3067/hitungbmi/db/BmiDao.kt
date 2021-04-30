@@ -12,4 +12,8 @@ interface BmiDao {
 
     @Query("SELECT * FROM bmi ORDER BY id DESC")
     fun getLastBmi(): LiveData<List<BmiEntity>>
-    }
+    @Query("DELETE FROM bmi")
+    fun clearData()
+
+}
+
