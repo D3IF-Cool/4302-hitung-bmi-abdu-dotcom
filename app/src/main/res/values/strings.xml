@@ -37,4 +37,6 @@ berat badannya ideal, gemuk atau kurus.\n\nAplikasi ini dibuat untuk kelas
 Mobpro 1. Temukan kodenya di https://github.com/D3IF-Cool/4302-hitung-bmi-abdu-dotcom\n\nCopyright © 2021 Indra Azimi.\nAll rights reserved.</string>
 
     <string name="tentang_aplikasi">Tentang Aplikasi</string>
+    <string name="berat_x">BB:  %1$.1f</string>
+    <string name="tinggi_x">TB:  %1$.1f</string>
 </resources>
