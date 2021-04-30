@@ -1,22 +1,29 @@
-package org.d3if3067.hitungbmi.ui
+package org.d3if3067.hitungbmi.ui.hitung
 
 import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.util.Log
+import android.view.*
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
+import androidx.navigation.fragment.findNavController
 import org.d3if3067.hitungbmi.R
 import org.d3if3067.hitungbmi.data.KategoriBmi
 import org.d3if3067.hitungbmi.databinding.FragmentHitungBinding
+import org.d3if3067.hitungbmi.db.BmiDb
 
 class HitungFragment : Fragment() {
-
+    private val viewModel: HitungViewModel by lazy {
+        val db = BmiDb.getInstance(requireContext())
+        val factory = HitungViewModelFactory(db.dao)
+        ViewModelProvider(this, factory).get(HitungViewModel::class.java)
+    }
     private lateinit var binding : FragmentHitungBinding
-    private lateinit var kategoriBmi : KategoriBmi
+
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         binding = FragmentHitungBinding.inflate(layoutInflater,container,false)
@@ -26,17 +33,54 @@ class HitungFragment : Fragment() {
         binding.buttonReset.setOnClickListener{
             resetBmi()
         }
+        binding.saranButton.setOnClickListener{ viewModel.mulaiNavigasi()}
         binding.shareButton.setOnClickListener { shareData() }
-
-        binding.saranButton.setOnClickListener{
-            view : View ->
-            view.findNavController().navigate(
-                HitungFragmentDirections.
-                        actionHitungFragmentToSaranFragment(kategoriBmi)
-            )
-        }
+        setHasOptionsMenu(true)
         return binding.root
     }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewModel.getHasilBmi().observe(viewLifecycleOwner, {
+            if (it == null) return@observe
+            binding.bmiTextView.text = getString(R.string.bmi_x, it.bmi)
+            binding.kategoriTextView.text = getString(R.string.kategori_x,
+                getKategori(it.kategori))
+            binding.buttonGroup.visibility = View.VISIBLE
+        })
+
+        viewModel.getNavigasi().observe(viewLifecycleOwner, {
+            if (it == null) return@observe
+            findNavController().navigate(HitungFragmentDirections
+                .actionHitungFragmentToSaranFragment(it))
+            viewModel.selesaiNavigasi()
+        })
+
+
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+        inflater.inflate(R.menu.options_menu, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId){
+            R.id.menu_histori -> {
+                findNavController().navigate(
+                    R.id.action_hitungFragment_to_historiFragment
+                )
+                return true
+            }
+            R.id.menu_about -> {
+                findNavController().navigate(
+                    R.id.action_hitungFragment_to_aboutFragment
+                )
+            }
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
 
     private fun resetBmi(){
         binding.beratEditText.text.clear()
@@ -54,7 +98,7 @@ class HitungFragment : Fragment() {
             Toast.makeText(context, R.string.tinggi_invalid, Toast.LENGTH_LONG).show()
             return
         }
-        val tinggiCm = tinggi.toFloat() / 100
+
 
         val selectedId = binding.radioGroup.checkedRadioButtonId
         if (selectedId == -1){
@@ -62,29 +106,15 @@ class HitungFragment : Fragment() {
             return
         }
         val isMale = selectedId == R.id.priaRadioButton
-        val bmi = berat.toFloat() / (tinggiCm * tinggiCm)
-        val kategori = getKategori(bmi,isMale)
 
-        binding.bmiTextView.text = getString(R.string.bmi_x, bmi)
-        binding.kategoriTextView.text = getString(R.string.kategori_x,kategori)
-        binding.buttonGroup.visibility = View.VISIBLE
+
+        viewModel.hitungBmi(berat, tinggi, isMale)
 
     }
-    private  fun getKategori(bmi: Float, isMale: Boolean): String {
-        kategoriBmi = if(isMale){
-            when {
-                bmi < 20.5 -> KategoriBmi.KURUS
-                bmi >= 27.0 -> KategoriBmi.GEMUK
-                else -> KategoriBmi.IDEAL
-            }
-        }else{
-            when{
-                bmi <18.5 -> KategoriBmi.KURUS
-                bmi >= 25.0 -> KategoriBmi.GEMUK
-                else -> KategoriBmi.IDEAL
-            }
-        }
-        val stringRes = when(kategoriBmi){
+    private fun getKategori(kategori: KategoriBmi): String {
+
+            val stringRes = when (kategori) {
+
             KategoriBmi.KURUS -> R.string.kurus
             KategoriBmi.GEMUK -> R.string.gemuk
             KategoriBmi.IDEAL -> R.string.ideal
